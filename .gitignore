@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment variables (secrets)
+.env
+
+# Flask instance folder (contains SQLite DB)
+instance/
+
+# Uploaded audio files
+upload/
+uploads/
+
+# Transcription output files
+transcribes/
+
+# Whisper / PyTorch model cache
+~/.cache/whisper/
+*.pt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TranscribeFlow: Audio Transcript Summarizer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-left">
+      <span class="navbar-title">TranscribeFlow</span>
+    </div>
+    <div class="navbar-right">
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('logout') }}" class="navbar-link">Logout</a>
+      {% endif %}
+    </div>
+  </nav>
+  <header class="header">
+    <div class="header-content">
+      <h1>TranscribeFlow</h1>
+      <p class="subtitle">Audio Transcript Summarizer</p>
+    </div>
+  </header>
+  {% block content %}{% endblock %}
+<style>
+.navbar {
+  width: 100%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 0.7rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ececec;
+}
+.navbar-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #222;
+}
+.navbar-link {
+  color: #222;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.navbar-link:hover {
+  background: #f2f2f2;
+}
+</style>
+</body>
+</html>

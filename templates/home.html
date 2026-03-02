@@ -1,0 +1,376 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+  <section class="main-section">
+
+    <!-- Welcome / Value Section -->
+    <div class="welcome-panel">
+      <h2 class="welcome-title">
+        Welcome back, {{ current_user.username }} 👋
+      </h2>
+      <p class="welcome-desc">
+        Convert your audio into accurate text and concise summaries in minutes.
+        Secure, fast, and built for professionals.
+      </p>
+
+      <div class="steps">
+        <div class="step">1. Upload or record audio</div>
+        <div class="step">2. AI transcribes</div>
+        <div class="step">3. Get text & summary</div>
+      </div>
+    </div>
+
+    <!-- Upload Section -->
+    <div class="upload-panel">
+
+      <!-- Tabs -->
+      <div class="panel-tabs">
+        <button class="panel-tab active" id="tab-upload" onclick="switchTab('upload')">📁 Upload File</button>
+        <button class="panel-tab" id="tab-record" onclick="switchTab('record')">🎙️ Live Record</button>
+      </div>
+
+      <!-- Upload Tab -->
+      <div id="section-upload">
+        <h3 class="panel-title">Upload your audio file</h3>
+        <p class="panel-subtitle">
+          Supported formats: MP3, WAV, M4A · Max 50MB · Your files stay private
+        </p>
+
+        <form method="post" enctype="multipart/form-data" class="upload-form">
+          <label for="audio" class="upload-label">Choose Audio File</label>
+
+          <div class="file-upload-group">
+          <input
+              type="file"
+              name="audio"
+              id="audio"
+              accept="audio/*"
+              required
+              class="input-field"
+              oninvalid="this.setCustomValidity('Please select an audio file to continue')"
+              oninput="this.setCustomValidity('')"
+              />
+            <button type="submit" class="btn upload-btn">
+              Upload
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Record Tab -->
+      <div id="section-record" style="display:none">
+        <h3 class="panel-title">Record live audio</h3>
+        <p class="panel-subtitle">
+          Record directly from your microphone · Speak clearly · Recording is processed locally
+        </p>
+
+        <div class="recorder-controls">
+          <div class="recorder-status" id="rec-status">
+            <span class="rec-dot idle" id="rec-dot"></span>
+            <span id="rec-label">Ready to record</span>
+          </div>
+
+          <div class="rec-timer" id="rec-timer">00:00</div>
+
+          <div class="rec-btn-row">
+            <button class="btn rec-start-btn" id="btn-start-rec" onclick="startRecording()">
+              🎙️ Start Recording
+            </button>
+            <button class="btn rec-stop-btn" id="btn-stop-rec" onclick="stopRecording()" disabled>
+              ⏹️ Stop Recording
+            </button>
+          </div>
+        </div>
+
+        <div id="rec-preview-area" style="display:none">
+          <p class="upload-label" style="margin-top:1.25rem">Recorded audio preview:</p>
+          <audio id="rec-audio-preview" controls class="rec-audio-player"></audio>
+          <button class="btn rec-transcribe-btn" id="btn-transcribe-rec" onclick="transcribeRecording()">
+            ⚡ Transcribe &amp; Summarize
+          </button>
+          <button class="btn rec-discard-btn" onclick="discardRecording()">
+            🗑️ Discard &amp; Re-record
+          </button>
+        </div>
+
+        <div id="rec-processing" style="display:none" class="rec-processing-area">
+          <div class="rec-spinner"></div>
+          <p>Transcribing and summarizing… please wait.</p>
+        </div>
+
+        <!-- Live record results -->
+        <div id="rec-results" style="display:none">
+          <div class="success-container">
+            <p class="success">✅ Recording transcribed successfully!</p>
+          </div>
+
+          <div class="transcription-result">
+            <h3 class="transcript-title">📝 Transcribed Text</h3>
+            <div class="transcript-box" id="rec-transcript-box"></div>
+            <button type="button" class="btn copy-btn" onclick="copyText('rec-transcript-box', 'Transcription')">📋 Copy to Clipboard</button>
+            <button type="button" class="btn download-btn" onclick="downloadText('rec-transcript-box', 'recording_transcript.txt')">⬇️ Download as .txt</button>
+          </div>
+
+          <div class="transcription-result summary-result" id="rec-summary-block" style="display:none">
+            <h3 class="transcript-title summary-title">📌 AI Summary <span class="model-badge">T5-base · Hugging Face</span></h3>
+            <div class="transcript-box" id="rec-summary-box"></div>
+            <button type="button" class="btn copy-btn" onclick="copyText('rec-summary-box', 'Summary')">📋 Copy Summary</button>
+            <button type="button" class="btn download-btn" onclick="downloadText('rec-summary-box', 'recording_summary.txt')">⬇️ Download Summary</button>
+          </div>
+        </div>
+      </div>
+
+      {% if success %}
+        <div id="upload-results">
+        <div class="success-container">
+          <p class="success">✅ Upload & Transcription successful!</p>
+        </div>
+
+        <!-- Display Transcribed Text -->
+        <div class="transcription-result">
+          <h3 class="transcript-title">📝 Transcribed Text</h3>
+          <p class="original-filename"><strong>Audio File:</strong> {{ original_filename }}</p>
+          <p class="txt-filename"><strong>Transcript Saved As:</strong> {{ txt_filename }} (in transcribes folder)</p>
+          
+          <div class="transcript-box" id="transcript-box">
+            {{ transcribed_text }}
+          </div>
+
+          <button type="button" class="btn copy-btn" onclick="copyToClipboard()">
+            📋 Copy to Clipboard
+          </button>
+          <button type="button" class="btn download-btn" onclick="downloadTranscript()">
+            ⬇️ Download as .txt
+          </button>
+        </div>
+
+        {% if summary_text %}
+          <div class="transcription-result summary-result">
+            <h3 class="transcript-title summary-title">📌 AI Summary <span class="model-badge">T5-base · Hugging Face</span></h3>
+            <div class="transcript-box" id="summary-box">
+              {{ summary_text }}
+            </div>
+            <button type="button" class="btn copy-btn" onclick="copySummary()">
+              📋 Copy Summary
+            </button>
+            <button type="button" class="btn download-btn" onclick="downloadSummary()">
+              ⬇️ Download Summary
+            </button>
+          </div>
+        {% endif %}
+
+        <script>
+          function copyToClipboard() {
+            const transcript = document.getElementById('transcript-box').innerText;
+            navigator.clipboard.writeText(transcript).then(() => {
+              alert('✅ Transcription copied to clipboard!');
+            }).catch(() => {
+              alert('❌ Failed to copy to clipboard');
+            });
+          }
+
+          function copySummary() {
+            const summary = document.getElementById('summary-box').innerText;
+            navigator.clipboard.writeText(summary).then(() => {
+              alert('✅ Summary copied to clipboard!');
+            }).catch(() => {
+              alert('❌ Failed to copy summary');
+            });
+          }
+
+          function downloadSummary() {
+            const summary = document.getElementById('summary-box').innerText;
+            const blob = new Blob([summary], { type: 'text/plain;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'summary.txt';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          }
+
+          function downloadTranscript() {
+            const transcript = document.getElementById('transcript-box').innerText;
+            const filename = {{ (txt_filename or 'transcription.txt') | tojson }};
+            const blob = new Blob([transcript], { type: 'text/plain;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          }
+        </script>
+        </div><!-- /#upload-results -->
+      {% endif %}
+
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <ul class="msg">
+            {% for m in messages %}
+              <li>{{ m }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      {% endwith %}
+    </div>
+
+  </section>
+</div>
+
+<script>
+  /* ── Tab switching ──────────────────────────────────────── */
+  function switchTab(tab) {
+    document.getElementById('section-upload').style.display = tab === 'upload' ? '' : 'none';
+    document.getElementById('section-record').style.display = tab === 'record' ? '' : 'none';
+    document.getElementById('tab-upload').classList.toggle('active', tab === 'upload');
+    document.getElementById('tab-record').classList.toggle('active', tab === 'record');
+    // Hide the other tab's results when switching
+    const uploadResults = document.getElementById('upload-results');
+    if (uploadResults) uploadResults.style.display = tab === 'upload' ? '' : 'none';
+    document.getElementById('rec-results').style.display = 'none';
+    document.getElementById('rec-preview-area').style.display = 'none';
+    document.getElementById('rec-processing').style.display = 'none';
+  }
+
+  /* ── MediaRecorder live recording ──────────────────────── */
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let recordedBlob = null;
+  let timerInterval = null;
+  let secondsElapsed = 0;
+
+  function padZero(n) { return n < 10 ? '0' + n : '' + n; }
+
+  function updateTimer() {
+    secondsElapsed++;
+    const m = Math.floor(secondsElapsed / 60);
+    const s = secondsElapsed % 60;
+    document.getElementById('rec-timer').textContent = padZero(m) + ':' + padZero(s);
+  }
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+      secondsElapsed = 0;
+      document.getElementById('rec-timer').textContent = '00:00';
+      document.getElementById('rec-results').style.display = 'none';
+      document.getElementById('rec-preview-area').style.display = 'none';
+
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+
+      mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorder.addEventListener('dataavailable', e => { if (e.data.size > 0) audioChunks.push(e.data); });
+      mediaRecorder.addEventListener('stop', onRecordingStopped);
+      mediaRecorder.start(250);
+
+      document.getElementById('btn-start-rec').disabled = true;
+      document.getElementById('btn-stop-rec').disabled = false;
+      document.getElementById('rec-dot').className = 'rec-dot recording';
+      document.getElementById('rec-label').textContent = 'Recording…';
+      timerInterval = setInterval(updateTimer, 1000);
+    } catch (err) {
+      alert('Microphone access denied or unavailable: ' + err.message);
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+      mediaRecorder.stream.getTracks().forEach(t => t.stop());
+    }
+    clearInterval(timerInterval);
+    document.getElementById('btn-start-rec').disabled = false;
+    document.getElementById('btn-stop-rec').disabled = true;
+    document.getElementById('rec-dot').className = 'rec-dot idle';
+    document.getElementById('rec-label').textContent = 'Recording stopped';
+  }
+
+  function onRecordingStopped() {
+    const ext = (mediaRecorder.mimeType || 'audio/webm').includes('ogg') ? 'ogg' : 'webm';
+    recordedBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+    const url = URL.createObjectURL(recordedBlob);
+    const preview = document.getElementById('rec-audio-preview');
+    preview.src = url;
+    document.getElementById('rec-preview-area').style.display = '';
+    document.getElementById('rec-label').textContent = 'Recording ready (' + document.getElementById('rec-timer').textContent + ')';
+  }
+
+  function discardRecording() {
+    recordedBlob = null;
+    audioChunks = [];
+    document.getElementById('rec-audio-preview').src = '';
+    document.getElementById('rec-preview-area').style.display = 'none';
+    document.getElementById('rec-results').style.display = 'none';
+    document.getElementById('rec-label').textContent = 'Ready to record';
+    document.getElementById('rec-dot').className = 'rec-dot idle';
+    document.getElementById('rec-timer').textContent = '00:00';
+  }
+
+  async function transcribeRecording() {
+    if (!recordedBlob) return;
+    const ext = recordedBlob.type.includes('ogg') ? 'ogg' : 'webm';
+    const file = new File([recordedBlob], 'live_recording.' + ext, { type: recordedBlob.type });
+    const formData = new FormData();
+    formData.append('audio', file);
+
+    document.getElementById('rec-preview-area').style.display = 'none';
+    document.getElementById('rec-processing').style.display = '';
+    document.getElementById('rec-results').style.display = 'none';
+
+    try {
+      const resp = await fetch('/upload', { method: 'POST', body: formData });
+      const data = await resp.json();
+      document.getElementById('rec-processing').style.display = 'none';
+
+      if (!resp.ok || data.error) {
+        alert('Error: ' + (data.error || 'Transcription failed'));
+        document.getElementById('rec-preview-area').style.display = '';
+        return;
+      }
+
+      document.getElementById('rec-transcript-box').textContent = data.transcript || '';
+      const summaryBlock = document.getElementById('rec-summary-block');
+      if (data.summary) {
+        document.getElementById('rec-summary-box').textContent = data.summary;
+        summaryBlock.style.display = '';
+      } else {
+        summaryBlock.style.display = 'none';
+      }
+      document.getElementById('rec-results').style.display = '';
+      document.getElementById('rec-label').textContent = 'Transcription complete!';
+    } catch (err) {
+      document.getElementById('rec-processing').style.display = 'none';
+      document.getElementById('rec-preview-area').style.display = '';
+      alert('Network error: ' + err.message);
+    }
+  }
+
+  /* ── Shared copy / download helpers ────────────────────── */
+  function copyText(boxId, label) {
+    const text = document.getElementById(boxId).innerText;
+    navigator.clipboard.writeText(text)
+      .then(() => alert('✅ ' + label + ' copied to clipboard!'))
+      .catch(() => alert('❌ Failed to copy'));
+  }
+
+  function downloadText(boxId, filename) {
+    const text = document.getElementById(boxId).innerText;
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+</script>
+{% endblock %}
