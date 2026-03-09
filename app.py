@@ -2,9 +2,9 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from dotenv import load_dotenv
 import os
 import uuid
+from datetime import datetime, timezone
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-import os
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from transcribe import transcribe_audio
@@ -34,7 +34,20 @@ class User(UserMixin, db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	username = db.Column(db.String(150), unique=True, nullable=False)
 	email = db.Column(db.String(150), unique=True, nullable=False)
-	password = db.Column(db.String(150), nullable=False)
+	password = db.Column(db.String(512), nullable=False)
+	transcriptions = db.relationship('Transcription', backref='user', lazy=True, order_by='Transcription.created_at.desc()')
+
+
+class Transcription(db.Model):
+	__tablename__ = 'transcriptions'
+	id = db.Column(db.Integer, primary_key=True)
+	user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+	original_filename = db.Column(db.String(255), nullable=False)
+	txt_filename = db.Column(db.String(255))
+	transcript = db.Column(db.Text, nullable=False)
+	summary = db.Column(db.Text)
+	created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -136,6 +149,20 @@ def home():
 	if request.method == 'POST':
 		upload_result = process_audio_upload(request.files.get('audio'))
 		if upload_result['success']:
+			# Save transcription + summary to database
+			try:
+				record = Transcription(
+					user_id=current_user.id,
+					original_filename=upload_result['original_filename'],
+					txt_filename=upload_result['txt_filename'],
+					transcript=upload_result['transcript'],
+					summary=upload_result['summary'],
+				)
+				db.session.add(record)
+				db.session.commit()
+			except Exception as db_exc:
+				db.session.rollback()
+				app.logger.error(f'DB save failed: {db_exc}')
 			# Store large result server-side; put only a tiny UUID key in the cookie
 			result_id = str(uuid.uuid4())
 			_result_store[result_id] = {
@@ -170,12 +197,51 @@ def upload_audio_api():
 	if not upload_result['success']:
 		return jsonify({'error': upload_result['error']}), upload_result['status_code']
 
+	# Save to database
+	try:
+		record = Transcription(
+			user_id=current_user.id,
+			original_filename=upload_result['original_filename'],
+			txt_filename=upload_result['txt_filename'],
+			transcript=upload_result['transcript'],
+			summary=upload_result['summary'],
+		)
+		db.session.add(record)
+		db.session.commit()
+	except Exception as db_exc:
+		db.session.rollback()
+		app.logger.error(f'DB save failed: {db_exc}')
+
 	return jsonify({
 		'transcript': upload_result['transcript'],
 		'summary': upload_result['summary'],
 		'transcript_file': upload_result['txt_filename'],
 		'original_filename': upload_result['original_filename']
 	}), 200
+
+
+@app.route('/history')
+@login_required
+def history():
+	page = request.args.get('page', 1, type=int)
+	pagination = (
+		Transcription.query
+		.filter_by(user_id=current_user.id)
+		.order_by(Transcription.created_at.desc())
+		.paginate(page=page, per_page=10, error_out=False)
+	)
+	return render_template('history.html', pagination=pagination, transcriptions=pagination.items)
+
+
+@app.route('/history/<int:record_id>/delete', methods=['POST'])
+@login_required
+def delete_transcription(record_id):
+	record = Transcription.query.filter_by(id=record_id, user_id=current_user.id).first_or_404()
+	db.session.delete(record)
+	db.session.commit()
+	flash('Transcription deleted.')
+	return redirect(url_for('history'))
+
 
 if __name__ == '__main__':
 	with app.app_context():

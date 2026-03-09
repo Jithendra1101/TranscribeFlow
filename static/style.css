@@ -557,3 +557,383 @@ body {
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
+
+/* ── History Page ──────────────────────────────────────────── */
+.history-container {
+  max-width: 780px;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.75rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.history-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.02em;
+}
+
+.history-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #737373;
+}
+
+.history-new-btn {
+  width: auto;
+  margin-top: 0;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+}
+
+.history-count {
+  font-size: 0.85rem;
+  color: #737373;
+  margin: 0 0 1rem;
+}
+
+/* History Card */
+.history-card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  transition: box-shadow 0.15s ease;
+}
+
+.history-card:hover {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+}
+
+.history-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  gap: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.history-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.history-filename {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 480px;
+}
+
+.history-date {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+
+.history-card-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.btn-icon {
+  background: none;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.btn-expand:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+.btn-delete:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.history-preview {
+  padding: 0.75rem 1.25rem;
+  margin: 0;
+  font-size: 0.875rem;
+  color: #555;
+  line-height: 1.55;
+  border-bottom: 1px solid #f5f5f5;
+  cursor: pointer;
+}
+
+/* Card Body (expanded) */
+.history-card-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: #fafafa;
+}
+
+.history-section {
+  background: #f0f9ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.history-summary-section {
+  background: #f0f6ff;
+  border-color: #93c5fd;
+  border-left: 4px solid #2563eb;
+}
+
+.history-section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.history-text-box {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.875rem;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: #1a1a1a;
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.summary-box {
+  border-color: #93c5fd;
+}
+
+.no-summary {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  font-style: italic;
+  margin: 0;
+  padding: 0 1.25rem 1rem;
+}
+
+/* Small inline buttons in history section title */
+.btn-sm {
+  padding: 0.2rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  color: #fff;
+}
+
+.btn-sm.copy-btn {
+  background: #0ea5e9;
+  margin: 0;
+  width: auto;
+}
+
+.btn-sm.copy-btn:hover {
+  background: #0284c7;
+}
+
+.btn-sm.download-btn {
+  background: #22c55e;
+  margin: 0;
+  width: auto;
+}
+
+.btn-sm.download-btn:hover {
+  background: #16a34a;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.page-btn {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 7px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1a1a1a;
+  text-decoration: none;
+  background: #fff;
+  transition: all 0.15s ease;
+}
+
+.page-btn:hover:not(.disabled):not(.current):not(.gap) {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+.page-btn.current {
+  background: #1a1a1a;
+  color: #fff;
+  border-color: #1a1a1a;
+}
+
+.page-btn.disabled,
+.page-btn.gap {
+  color: #9ca3af;
+  cursor: default;
+}
+
+/* History Empty State */
+.history-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+}
+
+.history-empty-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+
+.history-empty h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  color: #1a1a1a;
+}
+
+.history-empty p {
+  margin: 0 0 1.5rem;
+  color: #737373;
+  font-size: 0.9375rem;
+}
+
+.history-empty .history-new-btn {
+  display: inline-block;
+  width: auto;
+}
+
+/* ── Processing Overlay ────────────────────────────────────── */
+#upload-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-overlay-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 3rem 3.5rem;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 18px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12);
+  text-align: center;
+  max-width: 360px;
+  width: 90%;
+}
+
+.overlay-spinner {
+  width: 56px;
+  height: 56px;
+  border: 4px solid #e5e5e5;
+  border-top-color: #1a1a1a;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+.overlay-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+}
+
+.overlay-sub {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #737373;
+  line-height: 1.5;
+}
+
+.overlay-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.overlay-step {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.overlay-step.active {
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+/* ── JSON Download Button ──────────────────────────────────── */
+.json-btn {
+  background: #7c3aed;
+  color: #fff;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  letter-spacing: 0.01em;
+}
+
+.json-btn:hover {
+  background: #6d28d9;
+}
+
+.btn-sm.json-btn {
+  background: #7c3aed;
+  color: #fff;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+.btn-sm.json-btn:hover {
+  background: #6d28d9;
+}

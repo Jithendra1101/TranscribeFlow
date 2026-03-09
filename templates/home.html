@@ -1,5 +1,20 @@
 {% extends 'base.html' %}
 {% block content %}
+
+<!-- Full-page processing overlay -->
+<div id="upload-overlay" style="display:none">
+  <div class="upload-overlay-inner">
+    <div class="overlay-spinner"></div>
+    <p class="overlay-title">Processing your audio…</p>
+    <p class="overlay-sub">Whisper is transcribing · T5 is summarizing<br>This may take a minute ☕</p>
+    <div class="overlay-steps">
+      <span class="overlay-step active" id="ov-step-1">⏳ Uploading file…</span>
+      <span class="overlay-step" id="ov-step-2">🎙️ Transcribing speech…</span>
+      <span class="overlay-step" id="ov-step-3">📌 Generating summary…</span>
+    </div>
+  </div>
+</div>
+
 <div class="container">
   <section class="main-section">
 
@@ -36,7 +51,7 @@
           Supported formats: MP3, WAV, M4A · Max 50MB · Your files stay private
         </p>
 
-        <form method="post" enctype="multipart/form-data" class="upload-form">
+        <form method="post" enctype="multipart/form-data" class="upload-form" onsubmit="showUploadLoader(this)">
           <label for="audio" class="upload-label">Choose Audio File</label>
 
           <div class="file-upload-group">
@@ -50,8 +65,8 @@
               oninvalid="this.setCustomValidity('Please select an audio file to continue')"
               oninput="this.setCustomValidity('')"
               />
-            <button type="submit" class="btn upload-btn">
-              Upload
+            <button type="submit" class="btn upload-btn" id="upload-submit-btn">
+              ⚡ Upload &amp; Transcribe
             </button>
           </div>
         </form>
@@ -117,6 +132,11 @@
             <button type="button" class="btn copy-btn" onclick="copyText('rec-summary-box', 'Summary')">📋 Copy Summary</button>
             <button type="button" class="btn download-btn" onclick="downloadText('rec-summary-box', 'recording_summary.txt')">⬇️ Download Summary</button>
           </div>
+
+          <!-- JSON export for live recording -->
+          <button type="button" class="btn json-btn" id="rec-json-btn" style="display:none" onclick="downloadRecordingJSON()">
+            { } Download as JSON (Transcript + Summary)
+          </button>
         </div>
       </div>
 
@@ -159,6 +179,11 @@
           </div>
         {% endif %}
 
+        <!-- JSON export for upload results -->
+        <button type="button" class="btn json-btn" onclick="downloadUploadJSON()">
+          { } Download as JSON (Transcript + Summary)
+        </button>
+
         <script>
           function copyToClipboard() {
             const transcript = document.getElementById('transcript-box').innerText;
@@ -196,7 +221,6 @@
             const filename = {{ (txt_filename or 'transcription.txt') | tojson }};
             const blob = new Blob([transcript], { type: 'text/plain;charset=utf-8' });
             const url = window.URL.createObjectURL(blob);
-
             const link = document.createElement('a');
             link.href = url;
             link.download = filename;
@@ -204,6 +228,27 @@
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
+          }
+
+          function downloadUploadJSON() {
+            const transcript = document.getElementById('transcript-box').innerText.trim();
+            const summaryEl = document.getElementById('summary-box');
+            const summary = summaryEl ? summaryEl.innerText.trim() : '';
+            const originalName = {{ (original_filename or 'audio') | tojson }};
+            const data = {
+              filename: originalName,
+              transcript: transcript,
+              summary: summary,
+              exported_at: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = originalName.replace(/\.[^\/\.]+$/, '') + '_transcription.json';
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
           }
         </script>
         </div><!-- /#upload-results -->
@@ -224,6 +269,49 @@
 </div>
 
 <script>
+  /* ── Upload processing overlay ─────────────────────────── */
+  function showUploadLoader(form) {
+    const fileInput = form.querySelector('input[type="file"]');
+    if (!fileInput || !fileInput.files || !fileInput.files.length) return true;
+    document.getElementById('upload-overlay').style.display = 'flex';
+    // Animate the step labels progressively
+    const steps = ['ov-step-1', 'ov-step-2', 'ov-step-3'];
+    let current = 0;
+    function activateNext() {
+      if (current < steps.length) {
+        steps.forEach((id, i) => {
+          const el = document.getElementById(id);
+          if (i < current) { el.classList.remove('active'); el.style.opacity = '0.4'; }
+          else if (i === current) { el.classList.add('active'); el.style.opacity = '1'; }
+        });
+        current++;
+        if (current < steps.length) setTimeout(activateNext, 8000);
+      }
+    }
+    activateNext();
+    return true; // allow form to submit
+  }
+
+  /* ── Recording JSON download ─────────────────────────────── */
+  function downloadRecordingJSON() {
+    const transcript = document.getElementById('rec-transcript-box').innerText.trim();
+    const summaryEl = document.getElementById('rec-summary-box');
+    const summary = summaryEl ? summaryEl.innerText.trim() : '';
+    const data = {
+      filename: 'live_recording',
+      transcript: transcript,
+      summary: summary,
+      exported_at: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'live_recording_transcription.json';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   /* ── Tab switching ──────────────────────────────────────── */
   function switchTab(tab) {
     document.getElementById('section-upload').style.display = tab === 'upload' ? '' : 'none';
@@ -346,6 +434,7 @@
         summaryBlock.style.display = 'none';
       }
       document.getElementById('rec-results').style.display = '';
+      document.getElementById('rec-json-btn').style.display = '';
       document.getElementById('rec-label').textContent = 'Transcription complete!';
     } catch (err) {
       document.getElementById('rec-processing').style.display = 'none';

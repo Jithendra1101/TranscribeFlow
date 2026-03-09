@@ -6,10 +6,12 @@ A Flask web application that lets authenticated users upload audio files, automa
 
 ## Features
 
-- **User Authentication** — Secure signup / login / logout backed by SQLite via Flask-SQLAlchemy and Flask-Login
+- **User Authentication** — Secure signup / login / logout backed by NeonDB (PostgreSQL) via Flask-SQLAlchemy and Flask-Login
 - **Audio Transcription** — Converts speech to text using OpenAI Whisper (runs locally, no API key required)
 - **Text Summarization** — Condenses the transcript with T5-base (Hugging Face), running fully on-device
-- **Persistent Transcripts** — Each transcription is saved as a `.txt` file in the `transcribes/` folder
+- **Transcription History** — Every transcription and summary is saved to the cloud database and viewable in a paginated history page
+- **Delete Records** — Users can permanently delete any past transcription from their history
+- **Persistent Transcripts** — Each transcription is also saved as a `.txt` file in the `transcribes/` folder
 - **REST API** — `POST /upload` endpoint for programmatic access
 - **35 MB upload limit** — Handles typical audio files up to 35 MB
 
@@ -20,7 +22,7 @@ A Flask web application that lets authenticated users upload audio files, automa
 | Layer | Technology |
 |---|---|
 | Web framework | Flask |
-| Database / ORM | SQLite + Flask-SQLAlchemy |
+| Database / ORM | NeonDB (PostgreSQL) + Flask-SQLAlchemy |
 | Auth | Flask-Login + Werkzeug |
 | Transcription | OpenAI Whisper |
 | Summarization | Hugging Face Transformers (T5-base) + PyTorch |
@@ -39,8 +41,9 @@ TranscribeFlow/
 ├── requirements.txt    # Python dependencies
 ├── .env                # Environment variables (not committed)
 ├── templates/
-│   ├── base.html
-│   ├── home.html
+│   ├── base.html       # Shared navbar/layout
+│   ├── home.html       # Upload + live-record UI
+│   ├── history.html    # Transcription history page
 │   ├── login.html
 │   └── signup.html
 ├── static/
@@ -100,8 +103,10 @@ Create a `.env` file in the project root:
 
 ```env
 SECRET_KEY=your-secret-key-here
-SQLALCHEMY_DATABASE_URI=sqlite:///users.db
+SQLALCHEMY_DATABASE_URI=postgresql://user:password@host/dbname?sslmode=require&channel_binding=require
 ```
+
+> The app is configured for **NeonDB (PostgreSQL)**. Replace the URI with your own NeonDB connection string. psycopg2-binary is used as the driver (no separate ODBC install needed).
 
 ### 5. Run the application
 
@@ -123,8 +128,9 @@ On first run, the SQLite database (`instance/users.db`) is created automatically
 2. **Sign up** for an account, then **log in**
 3. On the home page, click **Choose File** and select an audio file (MP3, WAV, M4A, etc.)
 4. Click **Upload & Transcribe**
-5. The transcript and AI-generated summary are displayed on the page
-6. The raw transcript is saved to `transcribes/<filename>.txt`
+5. The transcript and AI-generated summary are displayed on the page and **saved to NeonDB**
+6. Click **📂 History** in the navbar to browse all your past transcriptions and summaries
+7. Expand any card to view the full text, copy, download, or delete the record
 
 ### REST API
 
@@ -184,7 +190,7 @@ Both models run **locally** — no external API calls or keys required after the
 | Variable | Default | Description |
 |---|---|---|
 | `SECRET_KEY` | `default_secret_key` | Flask session signing key — change in production |
-| `SQLALCHEMY_DATABASE_URI` | `sqlite:///users.db` | Database connection string |
+| `SQLALCHEMY_DATABASE_URI` | `sqlite:///users.db` | NeonDB (PostgreSQL) connection string |
 
 ---
 

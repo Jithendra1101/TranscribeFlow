@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container history-container">
+
+  <div class="history-header">
+    <div>
+      <h2 class="history-title">📂 Transcription History</h2>
+      <p class="history-subtitle">All your past transcriptions and AI summaries — stored securely in the cloud.</p>
+    </div>
+    <a href="{{ url_for('home') }}" class="btn history-new-btn">+ New Transcription</a>
+  </div>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <ul class="msg">{% for m in messages %}<li>{{ m }}</li>{% endfor %}</ul>
+    {% endif %}
+  {% endwith %}
+
+  {% if transcriptions %}
+    <p class="history-count">
+      Showing {{ pagination.items | length }} of {{ pagination.total }} transcription{{ 's' if pagination.total != 1 else '' }}
+    </p>
+
+    {% for t in transcriptions %}
+    <div class="history-card" id="card-{{ t.id }}">
+
+      <!-- Card Header -->
+      <div class="history-card-header">
+        <div class="history-card-meta">
+          <span class="history-filename">🎵 {{ t.original_filename }}</span>
+          <span class="history-date">🕐 {{ t.created_at.strftime('%b %d, %Y · %I:%M %p') if t.created_at else '—' }}</span>
+        </div>
+        <div class="history-card-actions">
+          <button class="btn-icon btn-expand"
+            data-card-id="{{ t.id }}"
+            onclick="toggleCard(this.dataset.cardId)" title="Expand / Collapse">
+            <span id="icon-{{ t.id }}">&#9660;</span>
+          </button>
+          <form method="POST" action="{{ url_for('delete_transcription', record_id=t.id) }}"
+                onsubmit="return confirm('Delete this transcription permanently?')"
+                style="margin:0">
+            <button type="submit" class="btn-icon btn-delete" title="Delete">🗑️</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Transcript Preview (always visible) -->
+      <p class="history-preview">
+        {{ t.transcript[:200] | e }}{% if t.transcript | length > 200 %}…{% endif %}
+      </p>
+
+      <!-- Expandable Full Content -->
+      <div class="history-card-body" id="body-{{ t.id }}" style="display:none">
+
+        <div class="history-section">
+          <div class="history-section-title">
+            📝 Full Transcript
+            <button class="btn-sm copy-btn"
+              data-box="tr-{{ t.id }}"
+              onclick="copyContent(this.dataset.box)">&#128203; Copy</button>
+            <button class="btn-sm download-btn"
+              data-box="tr-{{ t.id }}"
+              data-filename="{{ (t.txt_filename or t.original_filename) | e }}"
+              onclick="downloadContent(this.dataset.box, this.dataset.filename)">&#11015;&#65039; Download</button>
+          </div>
+          <div class="history-text-box" id="tr-{{ t.id }}">{{ t.transcript }}</div>
+        </div>
+
+        {% if t.summary %}
+        <div class="history-section history-summary-section">
+          <div class="history-section-title">
+            📌 AI Summary
+            <span class="model-badge">T5-base · Hugging Face</span>
+            <button class="btn-sm copy-btn"
+              data-box="su-{{ t.id }}"
+              onclick="copyContent(this.dataset.box)">&#128203; Copy</button>
+            <button class="btn-sm download-btn"
+              data-box="su-{{ t.id }}"
+              data-filename="{{ (t.original_filename ~ '_summary.txt') | e }}"
+              onclick="downloadContent(this.dataset.box, this.dataset.filename)">&#11015;&#65039; Download</button>
+          </div>
+          <div class="history-text-box summary-box" id="su-{{ t.id }}">{{ t.summary }}</div>
+        </div>
+        {% else %}
+        <p class="no-summary">No summary available for this entry.</p>
+        {% endif %}
+
+        <!-- JSON export -->
+        <button class="btn-sm json-btn"
+          data-filename={{ t.original_filename | tojson }}
+          data-transcript-id="tr-{{ t.id }}"
+          data-summary-id="{{ 'su-' ~ t.id if t.summary else '' }}"
+          data-created="{{ t.created_at.isoformat() if t.created_at else '' }}"
+          onclick="downloadJSONFromBtn(this)">
+          &#123;&#125; Download as JSON
+        </button>
+
+      </div>
+    </div>
+    {% endfor %}
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div class="pagination">
+      {% if pagination.has_prev %}
+        <a href="{{ url_for('history', page=pagination.prev_num) }}" class="page-btn">← Prev</a>
+      {% else %}
+        <span class="page-btn disabled">← Prev</span>
+      {% endif %}
+
+      {% for p in pagination.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+        {% if p %}
+          {% if p == pagination.page %}
+            <span class="page-btn current">{{ p }}</span>
+          {% else %}
+            <a href="{{ url_for('history', page=p) }}" class="page-btn">{{ p }}</a>
+          {% endif %}
+        {% else %}
+          <span class="page-btn gap">…</span>
+        {% endif %}
+      {% endfor %}
+
+      {% if pagination.has_next %}
+        <a href="{{ url_for('history', page=pagination.next_num) }}" class="page-btn">Next →</a>
+      {% else %}
+        <span class="page-btn disabled">Next →</span>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  {% else %}
+    <div class="history-empty">
+      <div class="history-empty-icon">🎙️</div>
+      <h3>No transcriptions yet</h3>
+      <p>Upload or record your first audio file to get started.</p>
+      <a href="{{ url_for('home') }}" class="btn history-new-btn">Go to Home</a>
+    </div>
+  {% endif %}
+
+</div>
+
+<script>
+  function toggleCard(id) {
+    const body = document.getElementById('body-' + id);
+    const icon = document.getElementById('icon-' + id);
+    const isOpen = body.style.display !== 'none';
+    body.style.display = isOpen ? 'none' : '';
+    icon.textContent = isOpen ? '▼' : '▲';
+  }
+
+  function copyContent(boxId) {
+    const text = document.getElementById(boxId).innerText;
+    navigator.clipboard.writeText(text)
+      .then(() => alert('✅ Copied to clipboard!'))
+      .catch(() => alert('❌ Failed to copy'));
+  }
+
+  function downloadContent(boxId, filename) {
+    const text = document.getElementById(boxId).innerText;
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function downloadJSONFromBtn(btn) {
+    const filename  = btn.dataset.filename;
+    const tId       = btn.dataset.transcriptId;
+    const sId       = btn.dataset.summaryId || null;
+    const createdAt = btn.dataset.created   || null;
+    downloadJSON(filename, tId, sId, createdAt);
+  }
+
+  function downloadJSON(filename, transcriptId, summaryId, createdAt) {
+    const transcript = document.getElementById(transcriptId).innerText.trim();
+    const summaryEl = summaryId ? document.getElementById(summaryId) : null;
+    const summary = summaryEl ? summaryEl.innerText.trim() : '';
+    const data = {
+      filename: filename,
+      transcript: transcript,
+      summary: summary || null,
+      created_at: createdAt || null,
+      exported_at: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename.replace(/\.[^\/\.]+$/, '') + '_transcription.json';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+</script>
+{% endblock %}

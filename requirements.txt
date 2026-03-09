@@ -8,3 +8,4 @@ imageio-ffmpeg
 transformers
 torch
 sentencepiece
+psycopg2-binary
