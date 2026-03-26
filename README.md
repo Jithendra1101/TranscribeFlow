@@ -78,7 +78,7 @@ Download from [https://www.gyan.dev/ffmpeg/builds/](https://www.gyan.dev/ffmpeg/
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/Jithendra1101/TranscribeFlow/
 cd TranscribeFlow
 ```
 
